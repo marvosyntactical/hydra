@@ -141,12 +141,12 @@ def _scatter_traj(Z3, out_gif, fps, frames):
         ax = fig.add_subplot(111, projection='3d')
         pts = Z3[:, :, ℓ, :].reshape(-1, 3)
         ax.scatter(pts[:, 0], pts[:, 1], pts[:, 2],
-                   s=3, c='darkorange', alpha=0.8)
-        ax.set_title(f"LN {ℓ}")
+                   s=3, c='navy', alpha=0.8)
+        ax.set_title(f"")
         ax.set_xlim([-1, 1]); ax.set_ylim([-1, 1]); ax.set_zlim([-1, 1])
         ax.axis('off')
         frame_paths.append(os.path.join(tmpdir, f"layer_{ℓ:03d}.png"))
-        plt.savefig(frame_paths[-1], dpi=120, transparent=True)
+        plt.savefig(frame_paths[-1], dpi=120, transparent=False)
         plt.close(fig)
 
     imgs = [imageio.imread(p) for p in frame_paths]
