@@ -9,6 +9,8 @@ import argparse
 import neptune
 import random
 
+import argos
+
 
 
 
@@ -26,6 +28,8 @@ def parse_args():
     parser.add_argument("--device", type=str, choices=["cuda", "gpu", "cpu"], default="gpu")
 
     parser.add_argument("--batch", type=int, default=64, help="Batch Size")
+
+    parser.add_argument("--argos", type=int, default=-1, help="If >=0, create a 3D (PCA) GIF of the latent semantic flow after this many train steps.")
 
     # ========== GPT HYPERPARAMS =======
 
@@ -88,6 +92,11 @@ def main(args):
     else:
         from hydra_model import GPT, GPTConfig
 
+
+    # ------------------------------------------------------------------
+    # 1. Preprocessing
+    # ------------------------------------------------------------------
+
     if args.dataset == "wiki2":
 
         print("Loading WikiText2 via HuggingFace...")
@@ -105,14 +114,14 @@ def main(args):
         train_ids = encode(train_text)
         val_ids   = encode(val_text)
 
-        BLOCK = args.block
+        block_size = args.block
         class CharDataset(Dataset):
             def __init__(self, data):
                 self.data = data
-            def __len__(self): return len(self.data) - BLOCK
+            def __len__(self): return len(self.data) - block_size
             def __getitem__(self, idx):
-                x = self.data[idx:idx+BLOCK]
-                y = self.data[idx+1:idx+BLOCK+1]
+                x = self.data[idx:idx+block_size]
+                y = self.data[idx+1:idx+block_size+1]
                 return x, y
 
 
@@ -156,15 +165,15 @@ def main(args):
         train_ids = ids[:split]
         val_ids   = ids[split:]
 
-        BLOCK = args.block  # Stories use longer context
+        block_size = args.block
 
         class TinyDataset(Dataset):
             def __init__(self, data):
                 self.data = data
-            def __len__(self): return len(self.data) - BLOCK
+            def __len__(self): return len(self.data) - block_size
             def __getitem__(self, idx):
-                x = self.data[idx:idx+BLOCK]
-                y = self.data[idx+1:idx+BLOCK+1]
+                x = self.data[idx:idx+block_size]
+                y = self.data[idx+1:idx+block_size+1]
                 return x, y
 
         trn_data = TinyDataset(train_ids)
@@ -196,6 +205,7 @@ def main(args):
         train_ids = ids[:split]
         val_ids   = ids[split:]
 
+        block_size = args.block
         class LMChunkDataset(Dataset):
             def __init__(self, data):
                 self.data = data
@@ -208,30 +218,17 @@ def main(args):
         trn_data = LMChunkDataset(train_ids)
         val_data = LMChunkDataset(val_ids)
 
+    train_loader = DataLoader(trn_data, batch_size=args.batch, shuffle=True, drop_last=True)
+    val_loader   = DataLoader(val_data, batch_size=args.batch, shuffle=False, drop_last=True)
 
-# text = open(path_txt).read()
-# tok  = ByteTokenizer(text)
-# data = torch.tensor(tok.encode(text), dtype=torch.long)
-
-
-
-# ------------------------------------------------------------------
-# 2. Split & Dataset
-# ------------------------------------------------------------------
-# n = int(0.9*len(data))
-
-
-    BATCH = args.batch
-    train_loader = DataLoader(trn_data, batch_size=BATCH, shuffle=True, drop_last=True)
-    val_loader   = DataLoader(val_data, batch_size=BATCH, shuffle=False, drop_last=True)
+    # ------------------------------------------------------------------
+    # 2. Model instantiation
+    # ------------------------------------------------------------------
 
     device = 'cuda' if torch.cuda.is_available() and not args.device == "cpu" else "cpu"
     print("Using Device:\t", device)
     print(f"Vocab size: {voc_size}")
 
-# ------------------------------------------------------------------
-# 3. Model instantiation
-# ------------------------------------------------------------------
 
     cfg = GPTConfig(
         block_size = args.block,
@@ -250,12 +247,16 @@ def main(args):
     model = GPT(cfg).to(device)
     optim = torch.optim.AdamW(model.parameters(), lr=3e-4, weight_decay=1e-1)
 
-# LR schedule
+    # LR schedule
     sched = torch.optim.lr_scheduler.CosineAnnealingLR(optim, T_max=3*len(train_loader))
 
-# ------------------------------------------------------------------
-# 4. Training loop
-# ------------------------------------------------------------------
+
+
+
+    # ------------------------------------------------------------------
+    # 3. Training loop
+    # ------------------------------------------------------------------
+
     best_val = float("inf")
     t0 = time.time()
     for epoch in range(3):                        # 3 epochs ~ quick demo
@@ -263,6 +264,19 @@ def main(args):
         # loop = tqdm(train_loader, desc=f"Epoch {epoch+1}", dynamic_ncols=True)
         loop = train_loader
         for step,(x, y) in enumerate(loop):
+
+            # --- Prep Visualisation ---
+            if step == args.argos:
+                activations = []
+                captain = argos.hooker(activations)
+
+                handles = []
+                mutiny = lambda: [h.remove() for h in handles]
+
+                for blocc in model.transformer.h:
+                    blocc.ln1.register_forward_hook(captain)
+                    blocc.ln2.register_forward_hook(captain)
+
             x, y = x.to(device), y.to(device)
             logits, loss = model(x, y)
             optim.zero_grad()
@@ -278,6 +292,13 @@ def main(args):
             #     "lr": f"{sched.get_last_lr()[0]:.2e}"
             # })
             print("Loss:\t",loss.item())
+
+            # --- Do Visualisation ---
+            if step == args.argos:
+
+                mutiny()
+                Z = torch.cat(activations, dim=2) # shape (B,T,L,d)
+                argos.panoptes(Z)
 
             if args.neptune:
                 run["train/loss"].append(loss.item())
