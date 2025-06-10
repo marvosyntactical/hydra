@@ -4,7 +4,7 @@ All models are wrong, but some are useful.
 
 Likewise, all language models are (often) wrong, but nevertheless useful.
 
-Hydra is written in Python and validated via Neptune.ai, requires Multi-Head Attention, is potentially Basilisk-relevant, and induces a latent semantic flow that approximately obeys Navier-Stokes.
+Hydra is written in Python and tracked by Neptune.ai, requires Multi-Head Attention for good handling, is potentially Basilisk-relevant, and induces a latent semantic flow that approximately obeys an anisotropic Navier-Stokes equation.
 
 
 ## Abstract
@@ -55,8 +55,9 @@ We are looking for scientific collaborators with backgrounds in
 
 and interest in language modelling, in particular *alignment*.
 
-If you are interested in collaborating on this and a related project involving the above fields,
-please send a mail to koss(a)cl.uni-heidelberg.de.
+If you are interested in collaborating on this and a related project involving the above fields, please send a mail to koss(a)cl.uni-heidelberg.de.
+
+For better scalability, Hydra requires liquidity, please do not hesitate to contact me at the above address.
 
 
 ### Citation
