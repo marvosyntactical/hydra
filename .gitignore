@@ -1,0 +1,6 @@
+.neptune_tok
+hydro/data/*
+hydro/.neptune/*
+hydro/__pycache__/*
+poseidon/*
+create/*
