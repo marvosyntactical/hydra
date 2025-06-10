@@ -8,6 +8,14 @@ Hydra is written in Python and tracked by Neptune.ai, requires Multi-Head Attent
 
 Code adapted from the wonderful [nanoGPT](https://github.com/karpathy/nanoGPT).
 
+### Latent evolution
+
+<p align="center">
+  <img src="img/hydra_evo.gif" width="300">
+</p>
+
+There is a sample **interactive** visualisation [here](https://marvosyntactical.github.io/hydra_latent_interactive.html).
+
 
 ## Abstract
 
