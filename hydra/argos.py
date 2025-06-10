@@ -14,7 +14,11 @@ from sklearn.decomposition import PCA
 from scipy.interpolate import RBFInterpolator
 from scipy.integrate import solve_ivp
 import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D            # noqa: F401
+from mpl_toolkits.mplot3d import Axes3D
+
+# interactive
+import plotly.graph_objects as go
+import webbrowser, tempfile
 
 
 # ------------------------------------------------------------------
@@ -153,3 +157,93 @@ def _scatter_traj(Z3, out_gif, fps, frames):
     imageio.mimsave(out_gif, imgs, fps=fps)
     print(f"Saved PCA animation to {out_gif}")
 
+
+
+def panoptes_interactive(model, input_ids, layers=None, n_components=3,
+                         out_html='hydra_latent_interactive.html',
+                         sample=1000):
+    """
+    Interactive 3‑D layer‑by‑layer latent scatter with a slider.
+
+    Parameters
+    ----------
+    model, input_ids : same as before
+    layers : list[int]  subset of layers to visualise
+    sample : int       subsample token points for readability
+    """
+    model.eval()
+    B, T = input_ids.shape
+    L = len(model.transformer.h)
+    if layers is None:
+        layers = list(range(L))
+
+    with torch.no_grad():
+        Z = _capture_activations(model, input_ids, layers)  # (B,T,L,d)
+    B,T,L,d = Z.shape
+
+    # Sub‑sample tokens for clarity
+    if B*T > sample:
+        idx = torch.randperm(B*T)[:sample]
+        b = idx // T
+        t = idx %  T
+        Z  = Z[b, t]        # (sample, L, d)
+    else:
+        Z = Z.reshape(-1, L, d)
+
+    Z_flat = Z.reshape(-1, d).float().numpy()
+
+    pca = PCA(n_components=n_components).fit(Z_flat)
+    Z3  = pca.transform(Z_flat)
+    Z3 /= np.linalg.norm(Z3, axis=1, keepdims=True)
+    Z3  = Z3.reshape(-1, L, 3)          # (N, L, 3)
+
+    # Build Plotly traces
+    frames = []
+    for ℓ, layer_idx in enumerate(layers):
+        pts = Z3[:, ℓ, :]
+        trace = go.Scatter3d(
+            x=pts[:,0], y=pts[:,1], z=pts[:,2],
+            mode='markers',
+            marker=dict(size=3, color='darkblue', opacity=0.8)
+        )
+        frames.append(go.Frame(data=[trace], name=f"layer{layer_idx}"))
+
+    # Initial trace (layer 0)
+    init_trace = frames[0].data[0]
+
+    layout = go.Layout(
+        scene=dict(xaxis=dict(visible=False), yaxis=dict(visible=False),
+                   zaxis=dict(visible=False)),
+        width=700, height=700,
+        updatemenus=[dict(type='buttons',
+            showactive=False,
+            y=1,
+            x=1.05,
+            xanchor='left',
+            yanchor='top',
+            pad=dict(t=0, r=10),
+            buttons=[dict(label='Play',
+                method='animate',
+                args=[None, dict(frame=dict(duration=500, redraw=True),
+                                 transition=dict(duration=0))])])]
+    )
+
+    sliders=[dict(
+        steps=[dict(method='animate',
+                    args=[[f.name], dict(mode='immediate',
+                                         frame=dict(duration=0, redraw=True),
+                                         transition=dict(duration=0))],
+                    label=f"Layer {layers[i]}")
+               for i, f in enumerate(frames)],
+        active=0,
+        x=0, y=0, len=1.0
+    )]
+
+    fig = go.Figure(data=[init_trace], layout=layout, frames=frames)
+    fig.update_layout(sliders=sliders, title="Hydra latent evolution")
+
+    fig.write_html(out_html, auto_open=False)
+    print(f"Wrote {out_html}")
+    # webbrowser.open('file://' + tempfile.gettempdir()+'/'+out_html
+    #   if out_html.startswith(tempfile.gettempdir())
+    #                else out_html)
