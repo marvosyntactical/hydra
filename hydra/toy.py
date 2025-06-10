@@ -65,7 +65,7 @@ def init_neptune(args):
         tok = f.read()
 
     run = neptune.init_run(
-        project="halcyon/hydro",
+        project="halcyon/hydra",
         api_token=tok,
     )
 
@@ -86,7 +86,7 @@ def main(args):
     if args.baseline:
         from model import GPT, GPTConfig
     else:
-        from hydro_model import GPT, GPTConfig
+        from hydra_model import GPT, GPTConfig
 
     if args.dataset == "wiki2":
 

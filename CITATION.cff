@@ -1,0 +1,10 @@
+cff-version: 1.2.0
+message: "If you use Hydra or its components, please cite:"
+authors:
+ - family-names: Koß
+   given-names: Marvin
+title: "Hydra: Parameter-Efficient Language Models with Hydrodynamical Latent Semantics"
+version: 0.1.0
+date-released: 2025-06-10
+doi: "10.5281/zenodo.15634703"
+url: "https://github.com/marvosyntactical/hydra"
