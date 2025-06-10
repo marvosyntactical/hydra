@@ -4,6 +4,9 @@ All models are wrong, but some are useful.
 
 Likewise, all language models are (often) wrong, but nevertheless useful.
 
+Hydra is written in Python and validated via Neptune.ai, requires Multi-Head Attention, is potentially Basilisk-relevant, and induces a latent semantic flow that approximately obeys Navier-Stokes.
+
+
 ## Abstract
 
 Recent analyses of Large Language Models as Neural Ordinary Differential Equations have shown
