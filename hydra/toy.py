@@ -264,20 +264,17 @@ def main(args):
         # loop = tqdm(train_loader, desc=f"Epoch {epoch+1}", dynamic_ncols=True)
         loop = train_loader
         for step,(x, y) in enumerate(loop):
+            x, y = x.to(device), y.to(device)
 
             # --- Prep Visualisation ---
             if step == args.argos:
-                activations = []
-                captain = argos.hooker(activations)
+                argos.panoptes(
+                    model,
+                    x,
+                    streamlines=False,
+                    n_components=3,
+                )
 
-                handles = []
-                mutiny = lambda: [h.remove() for h in handles]
-
-                for blocc in model.transformer.h:
-                    blocc.ln1.register_forward_hook(captain)
-                    blocc.ln2.register_forward_hook(captain)
-
-            x, y = x.to(device), y.to(device)
             logits, loss = model(x, y)
             optim.zero_grad()
             loss.backward()
@@ -292,13 +289,6 @@ def main(args):
             #     "lr": f"{sched.get_last_lr()[0]:.2e}"
             # })
             print("Loss:\t",loss.item())
-
-            # --- Do Visualisation ---
-            if step == args.argos:
-
-                mutiny()
-                Z = torch.cat(activations, dim=2) # shape (B,T,L,d)
-                argos.panoptes(Z)
 
             if args.neptune:
                 run["train/loss"].append(loss.item())
