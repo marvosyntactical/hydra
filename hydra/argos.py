@@ -159,33 +159,32 @@ def _scatter_traj(Z3, out_gif, fps, frames):
 
 
 
-def panoptes_interactive(model, input_ids, layers=None, n_components=3,
-                         out_html='hydra_latent_interactive.html',
-                         sample=1000):
+def panoptes_interactive(
+        model,
+        x,
+        n_components=3,
+        out_html='hydra_latent_interactive.html',
+        sample=1000
+    ):
     """
     Interactive 3‑D layer‑by‑layer latent scatter with a slider.
 
     Parameters
     ----------
-    model, input_ids : same as before
-    layers : list[int]  subset of layers to visualise
     sample : int       subsample token points for readability
     """
     model.eval()
-    B, T = input_ids.shape
-    L = len(model.transformer.h)
-    if layers is None:
-        layers = list(range(L))
 
     with torch.no_grad():
-        Z = _capture_activations(model, input_ids, layers)  # (B,T,L,d)
+        Z = _capture_activations(model, x)  # (B,T,L,d)
+
     B,T,L,d = Z.shape
 
     # Sub‑sample tokens for clarity
     if B*T > sample:
         idx = torch.randperm(B*T)[:sample]
         b = idx // T
-        t = idx %  T
+        t = idx % T
         Z  = Z[b, t]        # (sample, L, d)
     else:
         Z = Z.reshape(-1, L, d)
@@ -199,14 +198,14 @@ def panoptes_interactive(model, input_ids, layers=None, n_components=3,
 
     # Build Plotly traces
     frames = []
-    for ℓ, layer_idx in enumerate(layers):
+    for ℓ in range(L):
         pts = Z3[:, ℓ, :]
         trace = go.Scatter3d(
             x=pts[:,0], y=pts[:,1], z=pts[:,2],
             mode='markers',
             marker=dict(size=3, color='darkblue', opacity=0.8)
         )
-        frames.append(go.Frame(data=[trace], name=f"layer{layer_idx}"))
+        frames.append(go.Frame(data=[trace], name=f"LN {ℓ}"))
 
     # Initial trace (layer 0)
     init_trace = frames[0].data[0]
@@ -233,7 +232,7 @@ def panoptes_interactive(model, input_ids, layers=None, n_components=3,
                     args=[[f.name], dict(mode='immediate',
                                          frame=dict(duration=0, redraw=True),
                                          transition=dict(duration=0))],
-                    label=f"Layer {layers[i]}")
+                    label=f"LN {i}")
                for i, f in enumerate(frames)],
         active=0,
         x=0, y=0, len=1.0
@@ -243,7 +242,9 @@ def panoptes_interactive(model, input_ids, layers=None, n_components=3,
     fig.update_layout(sliders=sliders, title="Hydra latent evolution")
 
     fig.write_html(out_html, auto_open=False)
-    print(f"Wrote {out_html}")
+
+    print(f"Wrote interactive visualisation to {out_html}")
+
     # webbrowser.open('file://' + tempfile.gettempdir()+'/'+out_html
     #   if out_html.startswith(tempfile.gettempdir())
     #                else out_html)
