@@ -63,11 +63,11 @@ Coming soon.
 
 We are looking for scientific collaborators with backgrounds in
 
-_ (topological) hydrodynamics,
-_ differential geometry,
-_ information geometry,
-_ optimal transport
-_ mean field game theory
+* (topological) hydrodynamics,
+* differential geometry,
+* information geometry,
+* optimal transport
+* mean field game theory
 
 and interest in language modelling, in particular _alignment_.
 
