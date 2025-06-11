@@ -12,8 +12,6 @@ import random
 import argos
 
 
-
-
 def parse_args():
     parser = argparse.ArgumentParser(description="Swarm Experiments on MNIST")
     parser.add_argument("--neptune", action="store_true", help="Log to Neptune?")
@@ -30,6 +28,7 @@ def parse_args():
     parser.add_argument("--batch", type=int, default=64, help="Batch Size")
 
     parser.add_argument("--argos", type=int, default=-1, help="If >=0, create a 3D (PCA) GIF of the latent semantic flow after this many train steps.")
+    parser.add_argument("--interactive", action="store_true", help="If --argos >= 0, produce an interactive html?")
 
     # ========== GPT HYPERPARAMS =======
 
@@ -232,7 +231,7 @@ def main(args):
 
     cfg = GPTConfig(
         block_size = args.block,
-        vocab_size = voc_size,
+        vocab_size = voc_size + 200, # NOTE BUG FIXME somehow needed idk?
         n_layer    = args.n_layer,
         n_head     = args.n_head,
         n_embd     = args.d, # 512,
@@ -268,12 +267,22 @@ def main(args):
 
             # --- Prep Visualisation ---
             if step == args.argos:
-                argos.panoptes(
-                    model,
-                    x,
-                    streamlines=False,
-                    n_components=3,
-                )
+                if args.interactive:
+                    argos.panoptes_tokens(
+                        model,
+                        x,
+                        tok,
+                        n_components=3,
+                        sample=9813598179587198571985798
+                    )
+
+                else:
+                    argos.panoptes(
+                        model,
+                        x,
+                        streamlines=False,
+                        n_components=3,
+                    )
 
             logits, loss = model(x, y)
             optim.zero_grad()

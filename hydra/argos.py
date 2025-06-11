@@ -163,7 +163,7 @@ def panoptes_interactive(
         model,
         x,
         n_components=3,
-        out_html='hydra_latent_interactive.html',
+        out_html='../img/hydra_latent_interactive.html',
         sample=1000
     ):
     """
@@ -255,37 +255,38 @@ def build_token_labels(input_ids, tokenizer):
     # turn each int id into readable token (handle special bytes)
     dec = tokenizer.convert_ids_to_tokens
     labels = []
+    print(input_ids.shape)
     for seq in input_ids:
         labels.append([dec(int(t)) for t in seq])
-    return labels                                # list[list[str]]
+    return labels # list[list[str]]
 
-def panoptes_tokens(model, input_ids,
-                    tokenizer,
-                    layers=None,
-                    n_components=3,
-                    sample=2000,
-                    out_html="hydra_latent_tokens.html"):
+def panoptes_tokens(
+        model,
+        input_ids,
+        tokenizer,
+        n_components=3,
+        sample=2000,
+        out_html="../img/hydra_latent_labeled.html"
+    ):
 
     model.eval()
     B, T = input_ids.shape
-    L = len(model.transformer.h)
-    if layers is None:
-        layers = list(range(L))
 
     with torch.no_grad():
-        Z = _capture_activations(model, input_ids, layers)  # (B,T,L,d)
+        Z = _capture_activations(model, input_ids)  # (B,T,L,d)
+
     B,T,L,d = Z.shape
 
-    # subsample points to keep file size small
-    if B*T > sample:
-        idx = torch.randperm(B*T)[:sample]
-        b = idx // T
-        t = idx %  T
-        Z  = Z[b, t]            # (sample,L,d)
-        input_ids = input_ids[b, t]         # align labels
-    else:
-        Z = Z.reshape(-1, L, d)
-        input_ids = input_ids.reshape(-1)
+    # # subsample points to keep file size small
+    # if B*T > sample:
+    #     idx = torch.randperm(B*T)[:sample]
+    #     b = idx // T
+    #     t = idx %  T
+    #     Z  = Z[b, t]            # (sample,L,d)
+    #     input_ids = input_ids[b, t].unsqueeze(0) # align labels
+    # else:
+    #     Z = Z.reshape(-1, L, d)
+    #     input_ids = input_ids.reshape(-1).unsqueeze(0)
 
     Z_flat = Z.reshape(-1, d).float().numpy()
 
@@ -296,12 +297,29 @@ def panoptes_tokens(model, input_ids,
     Z3  = Z3.reshape(-1, L, 3)      # (N,L,3)
 
     # make hover labels
-    token_labels = build_token_labels(input_ids, tokenizer)
+    # print(f"input_ids.shape={input_ids.shape}")
+
+    # token_labels = build_token_labels(input_ids, tokenizer)
+
+    # print(f"len(token_labels)={len(token_labels)}")
+
+    flat_ids = input_ids.reshape(-1)             # (B*T,)
+    if flat_ids.numel() > sample:
+        idx = torch.randperm(flat_ids.numel())[:sample]
+        Z   = Z.reshape(-1, L, d)[idx]
+        flat_ids = flat_ids[idx]                 # align labels
+    else:
+        Z = Z.reshape(-1, L, d)
+
+    Z_flat = Z.reshape(-1, d).float().numpy()
+
+    token_labels = tokenizer.convert_ids_to_tokens(flat_ids.tolist())
 
     # Frames for each layer
     frames = []
-    for ℓ, layer_idx in enumerate(layers):
+    for ℓ in range(L):
         pts = Z3[:, ℓ, :]
+        print(pts.shape)
         text = [token_labels[i] for i in range(len(pts))]
         frames.append(go.Frame(
             data=[go.Scatter3d(
@@ -311,7 +329,7 @@ def panoptes_tokens(model, input_ids,
                 text=text,
                 hovertemplate='token: %{text}<extra></extra>'
             )],
-            name=f"L{layer_idx}"
+            name=f"LN {ℓ}"
         ))
 
     fig = go.Figure(
