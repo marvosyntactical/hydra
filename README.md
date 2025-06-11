@@ -46,6 +46,8 @@ Preprint in the works.
   <img src="img/dragons_derpy.png" width="500">
 </p>
 
+For the time being, in lieu of loss curves and mathematical derivations, Fig. 1 contains a qualitative representation of the empirical behaviour of pressure, skew and viscosity.
+
 ## Plots
 
 Coming soon.
