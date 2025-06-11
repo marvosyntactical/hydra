@@ -43,7 +43,7 @@ Preprint in the works.
 ### Figure 1
 
 <p align="center">
-  <img src="img/dragons_serious.png" width="500">
+  <img src="img/dragons_derpy.png" width="500">
 </p>
 
 ## Plots
