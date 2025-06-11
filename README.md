@@ -14,7 +14,7 @@ Code adapted from the wonderful [nanoGPT](https://github.com/karpathy/nanoGPT).
   <img src="img/hydra_evo.gif" width="300">
 </p>
 
-There are **interactive** sample visualisations [here](https://marvosyntactical.github.io/hydra_latent_interactive.html) and a labeled one [here](https://marvosyntactical.github.io/hydra_latent_labeled.html").
+There are **interactive** sample visualisations [here](https://marvosyntactical.github.io/hydra_latent_interactive.html) and a labeled one [here](https://marvosyntactical.github.io/hydra_latent_labeled.html).
 
 
 ## Abstract
