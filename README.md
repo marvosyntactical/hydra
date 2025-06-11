@@ -40,6 +40,12 @@ thereby magnetohydrodynamics, with better scaling properties.
 
 Preprint in the works.
 
+### Figure 1
+
+<p align="center">
+  <img src="img/dragons_serious.png" width="500">
+</p>
+
 ## Plots
 
 Coming soon.
