@@ -359,5 +359,5 @@ def panoptes_tokens(
         )
     )
 
-    fig.write_html(out_html, auto_open=True)
+    fig.write_html(out_html, auto_open=False)
     print(f"Saved interactive viewer → {out_html}")
